@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Math Game</title>
+
+<style>
+body{
+    font-family:Arial;
+    background:#f5f5f5;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:100vh;
+    margin:0;
+}
+
+.card{
+    background:white;
+    padding:30px;
+    border-radius:14px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.1);
+    text-align:center;
+    width:380px;
+}
+
+#problem{
+    font-size:28px;
+    margin:20px 0;
+}
+
+input{
+    font-size:20px;
+    padding:8px;
+    width:120px;
+    text-align:center;
+}
+
+select,button{
+    margin-top:10px;
+    padding:8px 12px;
+    font-size:14px;
+}
+
+.stats{
+    margin-top:10px;
+}
+
+.clock{
+    width:140px;
+    height:140px;
+    border:8px solid #333;
+    border-radius:50%;
+    margin:10px auto;
+    position:relative;
+    background:white;
+}
+
+.hand{
+    position:absolute;
+    width:4px;
+    height:60px;
+    background:#e53935;
+    top:10px;
+    left:50%;
+    transform-origin:bottom;
+    transform:translateX(-50%) rotate(0deg);
+    border-radius:2px;
+}
+
+.center{
+    position:absolute;
+    width:10px;
+    height:10px;
+    background:#333;
+    border-radius:50%;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+}
+
+.leaderboard{
+    margin-top:20px;
+    padding-top:10px;
+    border-top:1px solid #ddd;
+}
+
+.place{
+    font-size:16px;
+    margin:4px 0;
+}
+
+.coins{
+    font-size:18px;
+    margin-top:8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h2>Math Game</h2>
+
+<div class="clock">
+    <div id="hand" class="hand"></div>
+    <div class="center"></div>
+</div>
+
+<div class="coins">
+🪙 Coins: <span id="coins">0</span>
+</div>
+
+<select id="difficulty">
+    <option value="easy">easy</option>
+    <option value="medium">medium</option>
+    <option value="hard">hard</option>
+</select>
+
+<div id="problem">Press Start</div>
+
+<input id="answer" type="number">
+
+<br>
+
+<button onclick="startGame(60)">
+Start 60s
+</button>
+
+<button onclick="startGame(120)">
+Start 120s
+</button>
+
+<div class="stats">
+Score: <span id="score">0</span>
+</div>
+
+<div class="stats">
+Time: <span id="time">120</span>
+</div>
+
+<div class="stats">
+Best: <span id="best">0</span>
+</div>
+
+<div class="leaderboard">
+<h3>Топ-3 игроков</h3>
+
+<div class="place">
+🥇 1 место (35+ очков):
+<span id="p1">—</span>
+</div>
+
+<div class="place">
+🥈 2 место (28+ очков):
+<span id="p2">—</span>
+</div>
+
+<div class="place">
+🥉 3 место (15+ очков):
+<span id="p3">—</span>
+</div>
+</div>
+
+<div class="leaderboard">
+<h3>Результат игры</h3>
+<div id="result">Сыграйте игру</div>
+</div>
+
+</div>
+
+<script>
+
+let a,b,op,correct;
+
+let score = 0;
+let time = 120;
+let timeLimit = 120;
+let timer;
+
+let coins = parseInt(localStorage.getItem('math_coins') || 0);
+
+const problemEl = document.getElementById('problem');
+const answerEl = document.getElementById('answer');
+const hand = document.getElementById('hand');
+
+function rand(max){
+    return Math.floor(Math.random()*max);
+}
+
+function updateCoins(){
+    document.getElementById('coins').textContent = coins;
+    localStorage.setItem('math_coins', coins);
+}
+
+function updateClock(){
+
+    let progress = (timeLimit-time)/timeLimit;
+    let deg = progress*360;
+
+    hand.style.transform =
+    `translateX(-50%) rotate(${deg}deg)`;
+}
+
+function newProblem(){
+
+    let diff =
+    document.getElementById('difficulty').value;
+
+    if(diff==='easy'){
+        a=rand(10);
+        b=rand(10);
+        op='+';
+        correct=a+b;
+    }
+
+    if(diff==='medium'){
+        a=rand(20);
+        b=rand(20);
+
+        op=Math.random()>0.5?'+':'-';
+
+        correct=
+        op==='+' ? a+b : a-b;
+    }
+
+    if(diff==='hard'){
+        a=rand(12);
+        b=rand(12);
+
+        op=Math.random()>0.5?'×':'+';
+
+        correct=
+        op==='×' ? a*b : a+b;
+    }
+
+    problemEl.textContent =
+    `${a} ${op} ${b}`;
+
+    answerEl.value='';
+    answerEl.focus();
+}
+
+answerEl.addEventListener('keydown', e=>{
+
+    if(e.key==='Enter'){
+
+        let val =
+        parseInt(answerEl.value);
+
+        if(val===correct){
+
+            score++;
+
+            coins += 2;
+
+            updateCoins();
+
+            document.getElementById('score')
+            .textContent = score;
+        }
+
+        newProblem();
+    }
+});
+
+function updateLeaderboard(){
+
+    document.getElementById('p1').textContent =
+    score>=35 ? score : '—';
+
+    document.getElementById('p2').textContent =
+    score>=28 && score<35
+    ? score
+    : document.getElementById('p2').textContent;
+
+    document.getElementById('p3').textContent =
+    score>=15 && score<28
+    ? score
+    : document.getElementById('p3').textContent;
+
+    let placeText='Без места';
+
+    if(score>=35){
+
+        placeText='🥇 Вы заняли 1 место!';
+
+        coins += 50;
+    }
+
+    else if(score>=28){
+
+        placeText='🥈 Вы заняли 2 место!';
+
+        coins += 30;
+    }
+
+    else if(score>=15){
+
+        placeText='🥉 Вы заняли 3 место!';
+
+        coins += 15;
+    }
+
+    document.getElementById('result')
+    .textContent = placeText;
+
+    updateCoins();
+}
+
+function startGame(mode){
+
+    timeLimit = mode;
+
+    score = 0;
+
+    time = timeLimit;
+
+    document.getElementById('score')
+    .textContent = 0;
+
+    document.getElementById('time')
+    .textContent = time;
+
+    updateClock();
+
+    newProblem();
+
+    clearInterval(timer);
+
+    timer = setInterval(()=>{
+
+        time--;
+
+        document.getElementById('time')
+        .textContent = time;
+
+        updateClock();
+
+        if(time<=0){
+
+            clearInterval(timer);
+
+            problemEl.textContent='Time!';
+
+            let best =
+            parseInt(localStorage.getItem('math_best')||0);
+
+            if(score>best){
+
+                best = score;
+
+                localStorage.setItem('math_best', best);
+            }
+
+            document.getElementById('best')
+            .textContent = best;
+
+            updateLeaderboard();
+        }
+
+    },1000);
+}
+
+document.getElementById('best').textContent =
+parseInt(localStorage.getItem('math_best') || 0);
+
+updateCoins();
+
+</script>
+
+</body>
+</html>
